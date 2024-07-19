@@ -1,3 +1,9 @@
+oil-nvim (2.11.0-2) unstable; urgency=medium
+
+  * Don't remap
+
+ -- Dimitry Ishenko <dimitry.ishenko@gmail.com>  Fri, 19 Jul 2024 01:34:30 -0400
+
 oil-nvim (2.11.0-1) unstable; urgency=medium
 
   * Initial import.
