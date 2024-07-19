@@ -1,0 +1,12 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://github.com/stevearc/oil.nvim
+Upstream-Name: oil.nvim
+Upstream-Contact: Steven Arcangeli <stevearc@stevearc.com>
+
+Files: *
+Copyright: 2022-2024 The oil.nvim authors
+License: MIT
+
+Files: debian/*
+Copyright: 2024 Dimitry Ishenko <dimitry.ishenko@gmail.com>
+License: GPL-3.0+
