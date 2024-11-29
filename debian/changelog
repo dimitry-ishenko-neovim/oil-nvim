@@ -1,3 +1,115 @@
+oil-nvim (2.13.0-1) unstable; urgency=medium
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.13.0 (#478)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Steven Arcangeli ]
+  * chore: rework Makefile to not depend on direnv
+  * doc: improve type annotations for oil.open_preview
+  * refactor: rename 'preview' config to 'preview_win'
+  * refactor: rename action preview window to 'confirmation' window
+  * fix: guard against nil keymaps
+  * fix: don't deep merge keymaps (#510)
+
+  [ Foo-x ]
+  * fix: sort keymap help entries by description (#506)
+  * fix: add trailing slash to directories on yank_entry (#504)
+
+  [ Yu Guo ]
+  * fix: actions.preview accepts options (#497)
+  * chore: add __pycache__ to gitignore (#498)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Philipp Oeschger ]
+  * feat: config option to customize floating window title (#482)
+
+  [ staticssleever668 ]
+  * fix: only map ~ for normal mode (#484)
+
+  [ Éric NICOLAS ]
+  * doc: Update links to FreeDesktop's Trash spec (#490)
+
+  [ Steven Arcangeli ]
+  * doc: disable some type warnings from new LuaLS release
+  * lint: stricter type checking
+
+  [ csponge ]
+  * feat: config option to disable lsp file methods (#477)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Steven Arcangeli ]
+  * doc: add recipe to show current directory in the winbar
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.12.2 (#472)
+  * fix: wrap git rm callback in schedule_wrap (#475)
+  * doc: more and better type annotations
+  * doc: fix recipe for hiding gitignored files
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Micah Halter ]
+  * doc(recipes): improve git integrated hidden files recipe (#470)
+
+  [ csponge ]
+  * fix: ensure win_options are being set on correct window (#469)
+
+  [ Micah Halter ]
+  * perf(view): avoid running `is_hidden_file` when `show_hidden` is set
+    (#471)
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.12.1 (#468)
+
+  [ Steven Arcangeli ]
+  * fix: gracefully handle trashing file that does not exist
+  * fix: process deletes in dir before moving dir
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.12.0 (#434)
+
+  [ Julian ]
+  * fix: add compatibility for Lua 5.1 (#456)
+
+  [ Steven Arcangeli ]
+  * fix: handle rare case where file watcher outlives buffer
+
+  [ Anna Arad ]
+  * fix: Force standard C locale when getting `ls` input for parsing in
+    SSH (#455)
+  * fix: Handle users and groups with spaces over SSH (#448)
+
+  [ Steven Arcangeli ]
+  * doc: make lazy.nvim snippet more copy/paste-able (#445)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ sleeptightAnsiC ]
+  * feat: allow bufnr optional parameter for get_current_dir function
+    (#440)
+
+  [ Micah Halter ]
+  * fix: correctly check if `mini.icons` is actually setup (#441)
+  * feat: add support for `mini.icons` (#439)
+
+  [ Steven Arcangeli ]
+  * fix: cursor sometimes disappears after making changes (#438)
+
+  [ icefed ]
+  * feat: disable cursor in preview window (#433)
+  * fix: set floating window win_options when buffer changes (#432)
+
+ -- Dimitry Ishenko <dimitry.ishenko@gmail.com>  Thu, 28 Nov 2024 21:17:27 -0500
+
 oil-nvim (2.11.0-3) unstable; urgency=medium
 
   * oil.vim: Change \ to -
