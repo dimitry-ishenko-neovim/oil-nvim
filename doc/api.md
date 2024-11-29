@@ -9,12 +9,12 @@
 - [set_sort(sort)](#set_sortsort)
 - [set_is_hidden_file(is_hidden_file)](#set_is_hidden_fileis_hidden_file)
 - [toggle_hidden()](#toggle_hidden)
-- [get_current_dir()](#get_current_dir)
+- [get_current_dir(bufnr)](#get_current_dirbufnr)
 - [open_float(dir)](#open_floatdir)
 - [toggle_float(dir)](#toggle_floatdir)
 - [open(dir)](#opendir)
 - [close()](#close)
-- [open_preview(opts)](#open_previewopts)
+- [open_preview(opts, callback)](#open_previewopts-callback)
 - [select(opts, callback)](#selectopts-callback)
 - [save(opts, cb)](#saveopts-cb)
 - [setup(opts)](#setupopts)
@@ -73,9 +73,9 @@ require("oil").set_sort({ { "type", "asc" }, { "size", "desc" } })
 `set_is_hidden_file(is_hidden_file)` \
 Change how oil determines if the file is hidden
 
-| Param          | Type                                                  | Desc                                         |
-| -------------- | ----------------------------------------------------- | -------------------------------------------- |
-| is_hidden_file | `fun(filename: string, bufnr: nil\|integer): boolean` | Return true if the file/dir should be hidden |
+| Param          | Type                                             | Desc                                         |
+| -------------- | ------------------------------------------------ | -------------------------------------------- |
+| is_hidden_file | `fun(filename: string, bufnr: integer): boolean` | Return true if the file/dir should be hidden |
 
 ## toggle_hidden()
 
@@ -83,11 +83,14 @@ Change how oil determines if the file is hidden
 Toggle hidden files and directories
 
 
-## get_current_dir()
+## get_current_dir(bufnr)
 
-`get_current_dir(): nil|string` \
+`get_current_dir(bufnr): nil|string` \
 Get the current directory
 
+| Param | Type           | Desc |
+| ----- | -------------- | ---- |
+| bufnr | `nil\|integer` |      |
 
 ## open_float(dir)
 
@@ -122,43 +125,44 @@ Open oil browser for a directory
 Restore the buffer that was present when oil was opened
 
 
-## open_preview(opts)
+## open_preview(opts, callback)
 
-`open_preview(opts)` \
+`open_preview(opts, callback)` \
 Preview the entry under the cursor in a split
 
-| Param | Type         | Desc                                               |                                       |
-| ----- | ------------ | -------------------------------------------------- | ------------------------------------- |
-| opts  | `nil\|table` |                                                    |                                       |
-|       | vertical     | `boolean`                                          | Open the buffer in a vertical split   |
-|       | horizontal   | `boolean`                                          | Open the buffer in a horizontal split |
-|       | split        | `"aboveleft"\|"belowright"\|"topleft"\|"botright"` | Split modifier                        |
+| Param       | Type                                                    | Desc                                           |
+| ----------- | ------------------------------------------------------- | ---------------------------------------------- |
+| opts        | `nil\|oil.OpenPreviewOpts`                              |                                                |
+| >vertical   | `nil\|boolean`                                          | Open the buffer in a vertical split            |
+| >horizontal | `nil\|boolean`                                          | Open the buffer in a horizontal split          |
+| >split      | `nil\|"aboveleft"\|"belowright"\|"topleft"\|"botright"` | Split modifier                                 |
+| callback    | `nil\|fun(err: nil\|string)`                            | Called once the preview window has been opened |
 
 ## select(opts, callback)
 
 `select(opts, callback)` \
 Select the entry under the cursor
 
-| Param    | Type                         | Desc                                                    |                                                      |
-| -------- | ---------------------------- | ------------------------------------------------------- | ---------------------------------------------------- |
-| opts     | `nil\|oil.SelectOpts`        |                                                         |                                                      |
-|          | vertical                     | `nil\|boolean`                                          | Open the buffer in a vertical split                  |
-|          | horizontal                   | `nil\|boolean`                                          | Open the buffer in a horizontal split                |
-|          | split                        | `nil\|"aboveleft"\|"belowright"\|"topleft"\|"botright"` | Split modifier                                       |
-|          | tab                          | `nil\|boolean`                                          | Open the buffer in a new tab                         |
-|          | close                        | `nil\|boolean`                                          | Close the original oil buffer once selection is made |
-| callback | `nil\|fun(err: nil\|string)` | Called once all entries have been opened                |                                                      |
+| Param       | Type                                                    | Desc                                                 |
+| ----------- | ------------------------------------------------------- | ---------------------------------------------------- |
+| opts        | `nil\|oil.SelectOpts`                                   |                                                      |
+| >vertical   | `nil\|boolean`                                          | Open the buffer in a vertical split                  |
+| >horizontal | `nil\|boolean`                                          | Open the buffer in a horizontal split                |
+| >split      | `nil\|"aboveleft"\|"belowright"\|"topleft"\|"botright"` | Split modifier                                       |
+| >tab        | `nil\|boolean`                                          | Open the buffer in a new tab                         |
+| >close      | `nil\|boolean`                                          | Close the original oil buffer once selection is made |
+| callback    | `nil\|fun(err: nil\|string)`                            | Called once all entries have been opened             |
 
 ## save(opts, cb)
 
 `save(opts, cb)` \
 Save all changes
 
-| Param | Type                         | Desc                            |                                                                                             |
-| ----- | ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
-| opts  | `nil\|table`                 |                                 |                                                                                             |
-|       | confirm                      | `nil\|boolean`                  | Show confirmation when true, never when false, respect skip_confirm_for_simple_edits if nil |
-| cb    | `nil\|fun(err: nil\|string)` | Called when mutations complete. |                                                                                             |
+| Param    | Type                         | Desc                                                                                        |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------------------- |
+| opts     | `nil\|table`                 |                                                                                             |
+| >confirm | `nil\|boolean`               | Show confirmation when true, never when false, respect skip_confirm_for_simple_edits if nil |
+| cb       | `nil\|fun(err: nil\|string)` | Called when mutations complete.                                                             |
 
 **Note:**
 <pre>

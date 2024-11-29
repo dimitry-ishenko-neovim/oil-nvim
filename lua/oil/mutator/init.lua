@@ -3,12 +3,12 @@ local Trie = require("oil.mutator.trie")
 local cache = require("oil.cache")
 local columns = require("oil.columns")
 local config = require("oil.config")
+local confirmation = require("oil.mutator.confirmation")
 local constants = require("oil.constants")
 local fs = require("oil.fs")
 local lsp_helpers = require("oil.lsp.helpers")
 local oil = require("oil")
 local parser = require("oil.mutator.parser")
-local preview = require("oil.mutator.preview")
 local util = require("oil.util")
 local view = require("oil.view")
 local M = {}
@@ -140,6 +140,7 @@ M.create_actions_from_diffs = function(all_diffs)
       else
         local by_id = diff_by_id[diff.id]
         -- HACK: set has_delete field on a list-like table of diffs
+        ---@diagnostic disable-next-line: inject-field
         by_id.has_delete = true
         -- Don't insert the delete. We already know that there is a delete because of the presence
         -- in the diff_by_id map. The list will only include the 'new' diffs.
@@ -252,11 +253,10 @@ M.enforce_action_order = function(actions)
       -- Process children before moving
       -- e.g. NEW /a/b BEFORE MOVE /a -> /b
       dest_trie:accum_children_of(action.src_url, ret)
-      -- Copy children before moving parent dir
+      -- Process children before moving parent dir
       -- e.g. COPY /a/b -> /b BEFORE MOVE /a -> /d
-      src_trie:accum_children_of(action.src_url, ret, function(a)
-        return a.type == "copy"
-      end)
+      -- e.g. CHANGE /a/b BEFORE MOVE /a -> /d
+      src_trie:accum_children_of(action.src_url, ret)
       -- Process remove path before moving to new path
       -- e.g. MOVE /a -> /b BEFORE MOVE /c -> /a
       src_trie:accum_actions_at(action.dest_url, ret, function(a)
@@ -390,7 +390,11 @@ M.process_actions = function(actions, cb)
     "User",
     { pattern = "OilActionsPre", modeline = false, data = { actions = actions } }
   )
-  local did_complete = lsp_helpers.will_perform_file_operations(actions)
+
+  local did_complete = nil
+  if config.lsp_file_methods.enabled then
+    did_complete = lsp_helpers.will_perform_file_operations(actions)
+  end
 
   -- Convert some cross-adapter moves to a copy + delete
   for _, action in ipairs(actions) do
@@ -398,6 +402,7 @@ M.process_actions = function(actions, cb)
       local _, cross_action = util.get_adapter_for_action(action)
       -- Only do the conversion if the cross-adapter support is "copy"
       if cross_action == "copy" then
+        ---@diagnostic disable-next-line: assign-type-mismatch
         action.type = "copy"
         table.insert(actions, {
           type = "delete",
@@ -443,7 +448,9 @@ M.process_actions = function(actions, cb)
       return
     end
     if idx > #actions then
-      did_complete()
+      if did_complete then
+        did_complete()
+      end
       finish()
       return
     end
@@ -557,7 +564,7 @@ M.try_write_changes = function(confirm, cb)
   end
 
   local actions = M.create_actions_from_diffs(all_diffs)
-  preview.show(actions, confirm, function(proceed)
+  confirmation.show(actions, confirm, function(proceed)
     if not proceed then
       unlock()
       cb("Canceled")

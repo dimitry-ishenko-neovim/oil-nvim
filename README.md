@@ -20,7 +20,9 @@ https://user-images.githubusercontent.com/506791/209727111-6b4a11f4-634a-4efa-94
 ## Requirements
 
 - Neovim 0.8+
-- (optional) [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons
+- Icon provider plugin (optional)
+  - [mini.icons](https://github.com/echasnovski/mini.nvim/blob/main/readmes/mini-icons.md) for file and folder icons
+  - [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file icons
 
 ## Installation
 
@@ -32,9 +34,12 @@ oil.nvim supports all the usual plugin managers
 ```lua
 {
   'stevearc/oil.nvim',
+  ---@module 'oil'
+  ---@type oil.SetupOpts
   opts = {},
   -- Optional dependencies
-  dependencies = { "nvim-tree/nvim-web-devicons" },
+  dependencies = { { "echasnovski/mini.icons", opts = {} } },
+  -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
 }
 ```
 
@@ -165,6 +170,8 @@ require("oil").setup({
   -- Note that the cleanup process only starts when none of the oil buffers are currently displayed
   cleanup_delay_ms = 2000,
   lsp_file_methods = {
+    -- Enable or disable LSP file operations
+    enabled = true,
     -- Time to wait for LSP file operations to complete before skipping
     timeout_ms = 1000,
     -- Set to true to autosave buffers that are updated with LSP willRenameFiles
@@ -194,7 +201,7 @@ require("oil").setup({
     ["-"] = "actions.parent",
     ["_"] = "actions.open_cwd",
     ["`"] = "actions.cd",
-    ["~"] = { "actions.cd", opts = { scope = "tab" }, desc = ":tcd to the current oil directory" },
+    ["~"] = { "actions.cd", opts = { scope = "tab" }, desc = ":tcd to the current oil directory", mode = "n" },
     ["gs"] = "actions.change_sort",
     ["gx"] = "actions.open_external",
     ["g."] = "actions.toggle_hidden",
@@ -250,6 +257,8 @@ require("oil").setup({
     win_options = {
       winblend = 0,
     },
+    -- optionally override the oil buffers window title with custom function: fun(winid: integer): string
+    get_win_title = nil,
     -- preview_split: Split direction: "auto", "left", "right", "above", "below".
     preview_split = "auto",
     -- This is the config that will be passed to nvim_open_win.
@@ -258,8 +267,13 @@ require("oil").setup({
       return conf
     end,
   },
-  -- Configuration for the actions floating preview window
-  preview = {
+  -- Configuration for the file preview window
+  preview_win = {
+    -- Whether the preview window is automatically updated when the cursor is moved
+    update_on_cursor_moved = true,
+  },
+  -- Configuration for the floating action confirmation window
+  confirmation = {
     -- Width dimensions can be integers or a float between 0 and 1 (e.g. 0.4 for 40%)
     -- min_width and max_width can be a single value or a list of mixed integer/float types.
     -- max_width = {100, 0.8} means "the lesser of 100 columns or 80% of total"
@@ -280,8 +294,6 @@ require("oil").setup({
     win_options = {
       winblend = 0,
     },
-    -- Whether the preview window is automatically updated when the cursor is moved
-    update_on_cursor_moved = true,
   },
   -- Configuration for the floating progress window
   progress = {
@@ -329,7 +341,8 @@ Note that at the moment the ssh adapter does not support Windows machines, and i
 ## Recipes
 
 - [Toggle file detail view](doc/recipes.md#toggle-file-detail-view)
-- [Hide gitignored files](doc/recipes.md#hide-gitignored-files)
+- [Show CWD in the winbar](doc/recipes.md#show-cwd-in-the-winbar)
+- [Hide gitignored files and show git tracked hidden files](doc/recipes.md#hide-gitignored-files-and-show-git-tracked-hidden-files)
 
 ## API
 
@@ -342,12 +355,12 @@ Note that at the moment the ssh adapter does not support Windows machines, and i
 - [set_sort(sort)](doc/api.md#set_sortsort)
 - [set_is_hidden_file(is_hidden_file)](doc/api.md#set_is_hidden_fileis_hidden_file)
 - [toggle_hidden()](doc/api.md#toggle_hidden)
-- [get_current_dir()](doc/api.md#get_current_dir)
+- [get_current_dir(bufnr)](doc/api.md#get_current_dirbufnr)
 - [open_float(dir)](doc/api.md#open_floatdir)
 - [toggle_float(dir)](doc/api.md#toggle_floatdir)
 - [open(dir)](doc/api.md#opendir)
 - [close()](doc/api.md#close)
-- [open_preview(opts)](doc/api.md#open_previewopts)
+- [open_preview(opts, callback)](doc/api.md#open_previewopts-callback)
 - [select(opts, callback)](doc/api.md#selectopts-callback)
 - [save(opts, cb)](doc/api.md#saveopts-cb)
 - [setup(opts)](doc/api.md#setupopts)

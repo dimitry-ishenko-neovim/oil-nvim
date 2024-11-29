@@ -1,5 +1,5 @@
 -- Based on the FreeDesktop.org trash specification
--- https://specifications.freedesktop.org/trash-spec/trashspec-1.0.html
+-- https://specifications.freedesktop.org/trash-spec/1.0/
 local cache = require("oil.cache")
 local config = require("oil.config")
 local constants = require("oil.constants")
@@ -75,8 +75,13 @@ end
 ---@param path string
 ---@return string
 local function get_write_trash_dir(path)
-  local dev = uv.fs_lstat(path).dev
+  local lstat = uv.fs_lstat(path)
   local home_trash = get_home_trash_dir()
+  if not lstat then
+    -- If the source file doesn't exist default to home trash dir
+    return home_trash
+  end
+  local dev = lstat.dev
   if uv.fs_lstat(home_trash).dev == dev then
     return home_trash
   end
@@ -205,6 +210,7 @@ local function read_trash_info(info_file, cb)
               cb(".trashinfo file points to non-existant file")
             else
               trash_info.stat = trash_stat
+              ---@cast trash_info oil.TrashInfo
               cb(nil, trash_info)
             end
           end)

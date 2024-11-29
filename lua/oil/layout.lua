@@ -1,10 +1,15 @@
 local M = {}
 
+---@param value number
+---@return boolean
 local function is_float(value)
   local _, p = math.modf(value)
   return p ~= 0
 end
 
+---@param value number
+---@param max_value number
+---@return number
 local function calc_float(value, max_value)
   if value and is_float(value) then
     return math.min(max_value, value * max_value)
@@ -93,7 +98,7 @@ M.calculate_height = function(desired_height, opts)
   )
 end
 
----@class (exact) conform.WinLayout
+---@class (exact) oil.WinLayout
 ---@field width integer
 ---@field height integer
 ---@field row integer
@@ -134,14 +139,15 @@ end
 ---@param winid integer
 ---@param direction "above"|"below"|"left"|"right"|"auto"
 ---@param gap integer
----@return conform.WinLayout root_dim New dimensions of the original window
----@return conform.WinLayout new_dim New dimensions of the new window
+---@return oil.WinLayout root_dim New dimensions of the original window
+---@return oil.WinLayout new_dim New dimensions of the new window
 M.split_window = function(winid, direction, gap)
   if direction == "auto" then
     direction = vim.o.splitright and "right" or "left"
   end
 
   local float_config = vim.api.nvim_win_get_config(winid)
+  ---@type oil.WinLayout
   local dim_root = {
     width = float_config.width,
     height = float_config.height,
@@ -176,6 +182,11 @@ M.split_window = function(winid, direction, gap)
   return dim_root, dim_new
 end
 
+---@param desired_width integer
+---@param desired_height integer
+---@param opts table
+---@return integer width
+---@return integer height
 M.calculate_dims = function(desired_width, desired_height, opts)
   local width = M.calculate_width(desired_width, opts)
   local height = M.calculate_height(desired_height, opts)

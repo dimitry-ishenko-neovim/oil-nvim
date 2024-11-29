@@ -156,7 +156,7 @@ function SSHConnection.new(url)
   else
     self.jid = jid
   end
-  self:run("whoami", function(err, lines)
+  self:run("id -u", function(err, lines)
     if err then
       vim.notify(string.format("Error fetching ssh connection user: %s", err), vim.log.levels.WARN)
     else
@@ -164,7 +164,7 @@ function SSHConnection.new(url)
       self.meta.user = vim.trim(table.concat(lines, ""))
     end
   end)
-  self:run("groups", function(err, lines)
+  self:run("id -G", function(err, lines)
     if err then
       vim.notify(
         string.format("Error fetching ssh connection user groups: %s", err),
@@ -176,6 +176,7 @@ function SSHConnection.new(url)
     end
   end)
 
+  ---@cast self oil.sshConnection
   return self
 end
 
