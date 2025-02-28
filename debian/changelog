@@ -1,3 +1,148 @@
+oil-nvim (2.15.0-1) unstable; urgency=medium
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.15.0 (#545)
+
+  [ forestchen1224 ]
+  * fix: disable_preview respected when preview_method != "load" (#577)
+
+  [ Steven Arcangeli ]
+  * feat: most moves and copies will copy the undofile (#583)
+  * fix: more robust parsing of custom column timestamp formats (#582)
+
+  [ Ian Wright ]
+  * feat: add support for bufnr in column rendering functions (#575)
+
+  [ Steven Arcangeli ]
+  * lint: fix typecheck warning
+  * ci: update nvim install script for new appimage name
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Anton Janshagen ]
+  * feat: can selectively add entries to quickfix (#564)
+
+  [ Steven Arcangeli ]
+  * lint: upgrade to stylua v2.0.2
+  * fix: crash in preview on nvim 0.8
+  * lint: rename shadowed variable
+  * test: refactor tests to use new helper methods
+  * feat: API to automatically open preview window after opening oil
+    (#339)
+
+  [ Julian Visser ]
+  * doc: add note discouraging lazy loading (#565)
+
+  [ Peeranut Pongpakatien ]
+  * fix: open files in correct window from floating oil (#560)
+
+  [ Steven Arcangeli ]
+  * refactor: officially deprecated trash_command
+  * doc: rephrase the instructions to restore a trashed file
+  * cleanup: remove open({preview = true}) shim
+  * fix: preview sometimes causes oil buffers to be stuck in unloaded
+    state (#563)
+  * fix: more consistent cursor position when entering a new directory
+    (#536)
+  * lint: fix typecheck errors
+  * fix: error when non-current oil buffer has validation errors (#561)
+  * fix: work around incorrect link detection on windows (#557)
+  * fix: gracefully handle fs_stat failures (#558)
+
+  [ Benedict Ozua ]
+  * fix: support permissions checks on windows and virtual filesystems
+    (#555)
+
+  [ abdennourzahaf ]
+  * feat: floating window max width/height can be percentages (#553)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Ian Wright ]
+  * feat: pass oil bufnr to custom filename highlight function (#552)
+  * fix: directory rendering with custom highlights (#551)
+
+  [ abdennourzahaf ]
+  * test: update test script shebang to be compatible with NixOS (#550)
+
+  [ Steven Arcangeli ]
+  * doc: update winbar recipe to be window-specific (#546)
+  * fix: guard against nil metadata values (#548)
+  * fix: stat files if fs_readdir doesn't provide a type (#543)
+  * refactor: remove overcomplicated meta_fields abstraction
+
+  [ github-actions[bot] ]
+  * chore(master): release 2.14.0 (#515)
+
+  [ David Marchante ]
+  * fix: set alternate when using floating windows (#526)
+
+  [ Gustavo Sampaio ]
+  * fix: don't take over the preview window until it's opened for oil
+    (#532)
+
+  [ Steven Arcangeli ]
+  * fix: handle files with newlines in the name (#534)
+
+  [ lucascool12 ]
+  * fix: improper file name escaping (#530)
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Steven Arcangeli ]
+  * feat: better merging of action desc when overriding keymaps
+  * debug: include shell command in error message
+  * fix: work around performance issue with treesitter, folds, and large
+    directories
+
+  [ Foo-x ]
+  * feat: config option to customize filename highlight group (#508)
+
+  [ Ezekiel Warren ]
+  * feat: highlight groups for hidden files (#459)
+
+  [ Foo-x ]
+  * feat: add highlight group for orphaned links (#502)
+
+  [ Steven Arcangeli ]
+  * chore: refactor benchmarking to use benchmark.nvim
+  * feat: config option to disable previewing a file
+  * fix: image.nvim previews with preview_method=scratch
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ cdmill ]
+  * feat: option to quite vim if oil is closed as last buffer (#491)
+
+  [ Jalal El Mansouri ]
+  * feat: use scratch buffer for file previews (#467)
+
+  [ Steven Arcangeli ]
+  * fix: cursor sometimes does not hover previous file
+  * doc: trashing on windows works now
+  * perf: optimize rendering cadence
+  * perf: only sort entries after we have them all
+  * perf: replace vim.endswith and vim.startswith with string.match
+  * perf: change default view_options.natural_order behavior to disable
+    on large directories
+  * test: add harness for measuring performance
+  * lint: fix typechecking for new LuaLS version
+
+  [ Github Actions ]
+  * [docgen] Update docs skip-checks: true
+
+  [ Micah Halter ]
+  * feat: add `win_options` to `preview_win` (#514)
+
+  [ Steve Walker ]
+  * feat: disable preview for large files (#511)
+
+ -- Dimitry Ishenko <dimitry.ishenko@gmail.com>  Fri, 28 Feb 2025 14:35:34 -0500
+
 oil-nvim (2.13.0-1) unstable; urgency=medium
 
   [ github-actions[bot] ]
