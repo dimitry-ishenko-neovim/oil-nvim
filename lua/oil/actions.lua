@@ -143,7 +143,16 @@ M.parent = {
 
 M.close = {
   desc = "Close oil and restore original buffer",
-  callback = oil.close,
+  callback = function(opts)
+    opts = opts or {}
+    oil.close(opts)
+  end,
+  parameters = {
+    exit_if_last_buf = {
+      type = "boolean",
+      desc = "Exit vim if oil is closed as the last buffer",
+    },
+  },
 }
 
 ---@param cmd string
@@ -495,10 +504,12 @@ M.send_to_qflist = {
     opts = vim.tbl_deep_extend("keep", opts or {}, {
       target = "qflist",
       action = "r",
+      only_matching_search = false,
     })
     util.send_to_quickfix({
       target = opts.target,
       action = opts.action,
+      only_matching_search = opts.only_matching_search,
     })
   end,
   parameters = {
@@ -509,6 +520,10 @@ M.send_to_qflist = {
     action = {
       type = '"r"|"a"',
       desc = "Replace or add to current quickfix list (see |setqflist-action|)",
+    },
+    only_matching_search = {
+      type = "boolean",
+      desc = "Whether to only add the files that matches the last search. This option only applies when search highlighting is active",
     },
   },
 }

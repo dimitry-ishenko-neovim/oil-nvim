@@ -19,10 +19,16 @@ local last_cursor_entry = {}
 
 ---@param name string
 ---@param bufnr integer
----@return boolean
+---@return boolean display
+---@return boolean is_hidden Whether the file is classified as a hidden file
 M.should_display = function(name, bufnr)
-  return not config.view_options.is_always_hidden(name, bufnr)
-    and (config.view_options.show_hidden or not config.view_options.is_hidden_file(name, bufnr))
+  if config.view_options.is_always_hidden(name, bufnr) then
+    return false, true
+  else
+    local is_hidden = config.view_options.is_hidden_file(name, bufnr)
+    local display = config.view_options.show_hidden or not is_hidden
+    return display, is_hidden
+  end
 end
 
 ---@param bufname string
@@ -179,8 +185,17 @@ end
 
 M.set_win_options = function()
   local winid = vim.api.nvim_get_current_win()
+
+  -- work around https://github.com/neovim/neovim/pull/27422
+  vim.api.nvim_set_option_value("foldmethod", "manual", { scope = "local", win = winid })
+
   for k, v in pairs(config.win_options) do
     vim.api.nvim_set_option_value(k, v, { scope = "local", win = winid })
+  end
+  if vim.wo[winid].previewwindow then -- apply preview window options last
+    for k, v in pairs(config.preview_win.win_options) do
+      vim.api.nvim_set_option_value(k, v, { scope = "local", win = winid })
+    end
   end
 end
 
@@ -243,8 +258,9 @@ local function get_first_mutable_column_col(adapter, ranges)
 end
 
 ---Force cursor to be after hidden/immutable columns
-local function constrain_cursor()
-  if not config.constrain_cursor then
+---@param mode false|"name"|"editable"
+local function constrain_cursor(mode)
+  if not mode then
     return
   end
   local parser = require("oil.mutator.parser")
@@ -260,14 +276,12 @@ local function constrain_cursor()
   local result = parser.parse_line(adapter, line, column_defs)
   if result and result.ranges then
     local min_col
-    if config.constrain_cursor == "editable" then
+    if mode == "editable" then
       min_col = get_first_mutable_column_col(adapter, result.ranges)
-    elseif config.constrain_cursor == "name" then
+    elseif mode == "name" then
       min_col = result.ranges.name[1]
     else
-      error(
-        string.format('Unexpected value "%s" for option constrain_cursor', config.constrain_cursor)
-      )
+      error(string.format('Unexpected value "%s" for option constrain_cursor', mode))
     end
     if cur[2] < min_col then
       vim.api.nvim_win_set_cursor(0, { cur[1], min_col })
@@ -392,7 +406,7 @@ M.initialize = function(bufnr)
     callback = function()
       -- For some reason the cursor bounces back to its original position,
       -- so we have to defer the call
-      vim.schedule(constrain_cursor)
+      vim.schedule_wrap(constrain_cursor)(config.constrain_cursor)
     end,
   })
   vim.api.nvim_create_autocmd({ "CursorMoved", "ModeChanged" }, {
@@ -405,7 +419,7 @@ M.initialize = function(bufnr)
         return
       end
 
-      constrain_cursor()
+      constrain_cursor(config.constrain_cursor)
 
       if config.preview_win.update_on_cursor_moved then
         -- Debounce and update the preview window
@@ -532,8 +546,9 @@ M.initialize = function(bufnr)
 end
 
 ---@param adapter oil.Adapter
+---@param num_entries integer
 ---@return fun(a: oil.InternalEntry, b: oil.InternalEntry): boolean
-local function get_sort_function(adapter)
+local function get_sort_function(adapter, num_entries)
   local idx_funs = {}
   local sort_config = config.view_options.sort
 
@@ -555,7 +570,9 @@ local function get_sort_function(adapter)
       )
     end
     local col = columns.get_column(adapter, col_name)
-    if col and col.get_sort_value then
+    if col and col.create_sort_value_factory then
+      table.insert(idx_funs, { col.create_sort_value_factory(num_entries), order })
+    elseif col and col.get_sort_value then
       table.insert(idx_funs, { col.get_sort_value, order })
     else
       vim.notify_once(
@@ -606,7 +623,10 @@ local function render_buffer(bufnr, opts)
   local entries = cache.list_url(bufname)
   local entry_list = vim.tbl_values(entries)
 
-  table.sort(entry_list, get_sort_function(adapter))
+  -- Only sort the entries once we have them all
+  if not vim.b[bufnr].oil_rendering then
+    table.sort(entry_list, get_sort_function(adapter, #entry_list))
+  end
 
   local jump_idx
   if opts.jump_first then
@@ -622,20 +642,21 @@ local function render_buffer(bufnr, opts)
   end
 
   if M.should_display("..", bufnr) then
-    local cols = M.format_entry_cols({ 0, "..", "directory" }, column_defs, col_width, adapter)
+    local cols =
+      M.format_entry_cols({ 0, "..", "directory" }, column_defs, col_width, adapter, true, bufnr)
     table.insert(line_table, cols)
   end
 
   for _, entry in ipairs(entry_list) do
-    if M.should_display(entry[FIELD_NAME], bufnr) then
-      local cols = M.format_entry_cols(entry, column_defs, col_width, adapter)
+    local should_display, is_hidden = M.should_display(entry[FIELD_NAME], bufnr)
+    if should_display then
+      local cols = M.format_entry_cols(entry, column_defs, col_width, adapter, is_hidden, bufnr)
       table.insert(line_table, cols)
 
       local name = entry[FIELD_NAME]
       if seek_after_render == name then
         seek_after_render_found = true
         jump_idx = #line_table
-        M.set_last_cursor(bufname, nil)
       end
     end
   end
@@ -653,19 +674,23 @@ local function render_buffer(bufnr, opts)
     vim.schedule(function()
       for _, winid in ipairs(vim.api.nvim_list_wins()) do
         if vim.api.nvim_win_is_valid(winid) and vim.api.nvim_win_get_buf(winid) == bufnr then
-          -- If we're not jumping to a specific lnum, use the current lnum so we can adjust the col
-          local lnum = jump_idx or vim.api.nvim_win_get_cursor(winid)[1]
-          local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, true)[1]
-          local id_str = line:match("^/(%d+)")
-          local id = tonumber(id_str)
-          if id then
-            local entry = cache.get_entry_by_id(id)
-            if entry then
-              local name = entry[FIELD_NAME]
-              local col = line:find(name, 1, true) or (id_str:len() + 1)
-              vim.api.nvim_win_set_cursor(winid, { lnum, col - 1 })
+          if jump_idx then
+            local lnum = jump_idx
+            local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, true)[1]
+            local id_str = line:match("^/(%d+)")
+            local id = tonumber(id_str)
+            if id then
+              local entry = cache.get_entry_by_id(id)
+              if entry then
+                local name = entry[FIELD_NAME]
+                local col = line:find(name, 1, true) or (id_str:len() + 1)
+                vim.api.nvim_win_set_cursor(winid, { lnum, col - 1 })
+                return
+              end
             end
           end
+
+          constrain_cursor("name")
         end
       end
     end)
@@ -673,18 +698,48 @@ local function render_buffer(bufnr, opts)
   return seek_after_render_found
 end
 
+---@param name string
+---@param meta? table
+---@return string filename
+---@return string|nil link_target
+local function get_link_text(name, meta)
+  local link_text
+  if meta then
+    if meta.link_stat and meta.link_stat.type == "directory" then
+      name = name .. "/"
+    end
+
+    if meta.link then
+      link_text = "-> " .. meta.link
+      if meta.link_stat and meta.link_stat.type == "directory" then
+        link_text = util.addslash(link_text)
+      end
+    end
+  end
+
+  return name, link_text
+end
+
 ---@private
 ---@param entry oil.InternalEntry
 ---@param column_defs table[]
 ---@param col_width integer[]
 ---@param adapter oil.Adapter
+---@param is_hidden boolean
+---@param bufnr integer
 ---@return oil.TextChunk[]
-M.format_entry_cols = function(entry, column_defs, col_width, adapter)
+M.format_entry_cols = function(entry, column_defs, col_width, adapter, is_hidden, bufnr)
   local name = entry[FIELD_NAME]
   local meta = entry[FIELD_META]
+  local hl_suffix = ""
+  if is_hidden then
+    hl_suffix = "Hidden"
+  end
   if meta and meta.display_name then
     name = meta.display_name
   end
+  -- We can't handle newlines in filenames (and shame on you for doing that)
+  name = name:gsub("\n", "")
   -- First put the unique ID
   local cols = {}
   local id_key = cache.format_id(entry[FIELD_ID])
@@ -692,7 +747,7 @@ M.format_entry_cols = function(entry, column_defs, col_width, adapter)
   table.insert(cols, id_key)
   -- Then add all the configured columns
   for i, column in ipairs(column_defs) do
-    local chunk = columns.render_col(adapter, column, entry)
+    local chunk = columns.render_col(adapter, column, entry, bufnr)
     local text = type(chunk) == "table" and chunk[1] or chunk
     ---@cast text string
     col_width[i + 1] = math.max(col_width[i + 1], vim.api.nvim_strwidth(text))
@@ -700,32 +755,59 @@ M.format_entry_cols = function(entry, column_defs, col_width, adapter)
   end
   -- Always add the entry name at the end
   local entry_type = entry[FIELD_TYPE]
-  if entry_type == "directory" then
-    table.insert(cols, { name .. "/", "OilDir" })
-  elseif entry_type == "socket" then
-    table.insert(cols, { name, "OilSocket" })
-  elseif entry_type == "link" then
-    local link_text
-    if meta then
-      if meta.link_stat and meta.link_stat.type == "directory" then
-        name = name .. "/"
+
+  local get_custom_hl = config.view_options.highlight_filename
+  local link_name, link_name_hl, link_target, link_target_hl
+  if get_custom_hl then
+    local external_entry = util.export_entry(entry)
+
+    if entry_type == "link" then
+      link_name, link_target = get_link_text(name, meta)
+      local is_orphan = not (meta and meta.link_stat)
+      link_name_hl = get_custom_hl(external_entry, is_hidden, false, is_orphan, bufnr)
+
+      if link_target then
+        link_target_hl = get_custom_hl(external_entry, is_hidden, true, is_orphan, bufnr)
       end
 
-      if meta.link then
-        link_text = "->" .. " " .. meta.link
-        if meta.link_stat and meta.link_stat.type == "directory" then
-          link_text = util.addslash(link_text)
+      -- intentional fallthrough
+    else
+      local hl = get_custom_hl(external_entry, is_hidden, false, false, bufnr)
+      if hl then
+        -- Add the trailing / if this is a directory, this is important
+        if entry_type == "directory" then
+          name = name .. "/"
         end
+        table.insert(cols, { name, hl })
+        return cols
       end
     end
+  end
 
-    table.insert(cols, { name, "OilLink" })
-    if link_text then
-      table.insert(cols, { link_text, "OilLinkTarget" })
+  if entry_type == "directory" then
+    table.insert(cols, { name .. "/", "OilDir" .. hl_suffix })
+  elseif entry_type == "socket" then
+    table.insert(cols, { name, "OilSocket" .. hl_suffix })
+  elseif entry_type == "link" then
+    if not link_name then
+      link_name, link_target = get_link_text(name, meta)
+    end
+    local is_orphan = not (meta and meta.link_stat)
+    if not link_name_hl then
+      link_name_hl = (is_orphan and "OilOrphanLink" or "OilLink") .. hl_suffix
+    end
+    table.insert(cols, { link_name, link_name_hl })
+
+    if link_target then
+      if not link_target_hl then
+        link_target_hl = (is_orphan and "OilOrphanLinkTarget" or "OilLinkTarget") .. hl_suffix
+      end
+      table.insert(cols, { link_target, link_target_hl })
     end
   else
-    table.insert(cols, { name, "OilFile" })
+    table.insert(cols, { name, "OilFile" .. hl_suffix })
   end
+
   return cols
 end
 
@@ -814,6 +896,7 @@ M.render_buffer_async = function(bufnr, opts, callback)
     vim.b[bufnr].oil_rendering = false
     loading.set_loading(bufnr, false)
     render_buffer(bufnr, { jump = true })
+    M.set_last_cursor(bufname, nil)
     vim.bo[bufnr].undolevels = vim.api.nvim_get_option_value("undolevels", { scope = "global" })
     vim.bo[bufnr].modifiable = not buffers_locked and adapter.is_modifiable(bufnr)
     if callback then
@@ -838,6 +921,7 @@ M.render_buffer_async = function(bufnr, opts, callback)
   end
 
   cache.begin_update_url(bufname)
+  local num_iterations = 0
   adapter.list(bufname, get_used_columns(), function(err, entries, fetch_more)
     loading.set_loading(bufnr, false)
     if err then
@@ -854,11 +938,13 @@ M.render_buffer_async = function(bufnr, opts, callback)
       local now = uv.hrtime() / 1e6
       local delta = now - start_ms
       -- If we've been chugging for more than 40ms, go ahead and render what we have
-      if delta > 40 then
+      if (delta > 25 and num_iterations < 1) or delta > 500 then
+        num_iterations = num_iterations + 1
         start_ms = now
         vim.schedule(function()
           seek_after_render_found =
             render_buffer(bufnr, { jump = not seek_after_render_found, jump_first = first })
+          start_ms = uv.hrtime() / 1e6
         end)
       end
       first = false

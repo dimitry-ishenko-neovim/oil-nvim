@@ -39,7 +39,9 @@ oil.nvim supports all the usual plugin managers
   opts = {},
   -- Optional dependencies
   dependencies = { { "echasnovski/mini.icons", opts = {} } },
-  -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
+  -- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if you prefer nvim-web-devicons
+  -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+  lazy = false,
 }
 ```
 
@@ -190,22 +192,22 @@ require("oil").setup({
   -- Set to `false` to remove a keymap
   -- See :help oil-actions for a list of all available actions
   keymaps = {
-    ["g?"] = "actions.show_help",
+    ["g?"] = { "actions.show_help", mode = "n" },
     ["<CR>"] = "actions.select",
-    ["<C-s>"] = { "actions.select", opts = { vertical = true }, desc = "Open the entry in a vertical split" },
-    ["<C-h>"] = { "actions.select", opts = { horizontal = true }, desc = "Open the entry in a horizontal split" },
-    ["<C-t>"] = { "actions.select", opts = { tab = true }, desc = "Open the entry in new tab" },
+    ["<C-s>"] = { "actions.select", opts = { vertical = true } },
+    ["<C-h>"] = { "actions.select", opts = { horizontal = true } },
+    ["<C-t>"] = { "actions.select", opts = { tab = true } },
     ["<C-p>"] = "actions.preview",
-    ["<C-c>"] = "actions.close",
+    ["<C-c>"] = { "actions.close", mode = "n" },
     ["<C-l>"] = "actions.refresh",
-    ["-"] = "actions.parent",
-    ["_"] = "actions.open_cwd",
-    ["`"] = "actions.cd",
-    ["~"] = { "actions.cd", opts = { scope = "tab" }, desc = ":tcd to the current oil directory", mode = "n" },
-    ["gs"] = "actions.change_sort",
+    ["-"] = { "actions.parent", mode = "n" },
+    ["_"] = { "actions.open_cwd", mode = "n" },
+    ["`"] = { "actions.cd", mode = "n" },
+    ["~"] = { "actions.cd", opts = { scope = "tab" }, mode = "n" },
+    ["gs"] = { "actions.change_sort", mode = "n" },
     ["gx"] = "actions.open_external",
-    ["g."] = "actions.toggle_hidden",
-    ["g\\"] = "actions.toggle_trash",
+    ["g."] = { "actions.toggle_hidden", mode = "n" },
+    ["g\\"] = { "actions.toggle_trash", mode = "n" },
   },
   -- Set to false to disable all of the above keymaps
   use_default_keymaps = true,
@@ -214,15 +216,16 @@ require("oil").setup({
     show_hidden = false,
     -- This function defines what is considered a "hidden" file
     is_hidden_file = function(name, bufnr)
-      return vim.startswith(name, ".")
+      local m = name:match("^%.")
+      return m ~= nil
     end,
     -- This function defines what will never be shown, even when `show_hidden` is set
     is_always_hidden = function(name, bufnr)
       return false
     end,
-    -- Sort file names in a more intuitive order for humans. Is less performant,
-    -- so you may want to set to false if you work with large directories.
-    natural_order = true,
+    -- Sort file names with numbers in a more intuitive order for humans.
+    -- Can be "fast", true, or false. "fast" will turn it off for large directories.
+    natural_order = "fast",
     -- Sort file and directory names case insensitive
     case_insensitive = false,
     sort = {
@@ -231,6 +234,10 @@ require("oil").setup({
       { "type", "asc" },
       { "name", "asc" },
     },
+    -- Customize the highlight group for the file name
+    highlight_filename = function(entry, is_hidden, is_link_target, is_link_orphan)
+      return nil
+    end,
   },
   -- Extra arguments to pass to SCP when moving/copying files over SSH
   extra_scp_args = {},
@@ -251,6 +258,7 @@ require("oil").setup({
   float = {
     -- Padding around the floating window
     padding = 2,
+    -- max_width and max_height can be integers or a float between 0 and 1 (e.g. 0.4 for 40%)
     max_width = 0,
     max_height = 0,
     border = "rounded",
@@ -271,6 +279,14 @@ require("oil").setup({
   preview_win = {
     -- Whether the preview window is automatically updated when the cursor is moved
     update_on_cursor_moved = true,
+    -- How to open the preview window "load"|"scratch"|"fast_scratch"
+    preview_method = "fast_scratch",
+    -- A function that returns true to disable preview on a file e.g. to avoid lag
+    disable_preview = function(filename)
+      return false
+    end,
+    -- Window-local options to use for preview window buffers
+    win_options = {},
   },
   -- Configuration for the floating action confirmation window
   confirmation = {
@@ -356,10 +372,10 @@ Note that at the moment the ssh adapter does not support Windows machines, and i
 - [set_is_hidden_file(is_hidden_file)](doc/api.md#set_is_hidden_fileis_hidden_file)
 - [toggle_hidden()](doc/api.md#toggle_hidden)
 - [get_current_dir(bufnr)](doc/api.md#get_current_dirbufnr)
-- [open_float(dir)](doc/api.md#open_floatdir)
+- [open_float(dir, opts, cb)](doc/api.md#open_floatdir-opts-cb)
 - [toggle_float(dir)](doc/api.md#toggle_floatdir)
-- [open(dir)](doc/api.md#opendir)
-- [close()](doc/api.md#close)
+- [open(dir, opts, cb)](doc/api.md#opendir-opts-cb)
+- [close(opts)](doc/api.md#closeopts)
 - [open_preview(opts, callback)](doc/api.md#open_previewopts-callback)
 - [select(opts, callback)](doc/api.md#selectopts-callback)
 - [save(opts, cb)](doc/api.md#saveopts-cb)
