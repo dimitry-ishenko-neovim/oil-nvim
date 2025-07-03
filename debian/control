@@ -13,6 +13,8 @@ Rules-Requires-Root: no
 
 Package: oil-nvim
 Architecture: all
-Depends: ${misc:Depends}, neovim (>= 0.8)
+Depends:
+ ${misc:Depends},
+ neovim (>= 0.8)
 Description: Neovim file explorer
  Edit your filesystem like a buffer.
