@@ -4,9 +4,9 @@ Upstream-Name: oil.nvim
 Upstream-Contact: Steven Arcangeli <stevearc@stevearc.com>
 
 Files: *
-Copyright: 2022-2024 The oil.nvim authors
-License: MIT
+Copyright: 2022, Steven Arcangeli
+License: Expat
 
 Files: debian/*
-Copyright: 2024 Dimitry Ishenko <dimitry.ishenko@gmail.com>
-License: GPL-3.0+
+Copyright: 2024, Dimitry Ishenko <dimitry.ishenko@gmail.com>
+License: GPL-2+
