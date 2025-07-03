@@ -1,3 +1,11 @@
+oil-nvim (2.15.0-2) unstable; urgency=medium
+
+  * d/copyright: simplify
+  * d/control: formatting
+  * oil.vim => oil.lua
+
+ -- Dimitry Ishenko <dimitry.ishenko@gmail.com>  Thu, 03 Jul 2025 17:19:01 -0400
+
 oil-nvim (2.15.0-1) unstable; urgency=medium
 
   [ github-actions[bot] ]
